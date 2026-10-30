@@ -30,7 +30,8 @@ button{font:inherit;cursor:pointer}
 .btn.big{padding:16px 20px;font-size:18px;border-radius:16px}
 .btn[disabled]{opacity:.5}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-.row>.btn{flex:1;min-width:120px}
+.row>.btn{flex:0 1 auto;padding:9px 14px;font-size:15px}
+.src{font-size:14px;margin-top:8px}.src a{color:var(--accent);word-break:break-all}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
 .mute{color:var(--mute);font-size:14px}
 h2{font-size:20px;margin:6px 0}
@@ -126,6 +127,7 @@ const STR = {
     adaptHint: "Adapt this recipe: ", newRecipe: "Recipe ready", noSteps: "(no steps)",
     keepAwake: "Screen stays on while cooking", difficulty: { easy: "easy", medium: "medium", advanced: "advanced" },
     reverse: "↺ Reverse",
+    sources: "Recipe sources (open in browser)", confirmClear: "Clear this conversation? Saved recipes stay.",
     saveSettings: "Save settings", settingsSaved: "Saved ✓", keySet: "API key is saved on this phone.", keyMissing: "No API key saved yet.",
     importTitle: "Import recipes from photos or PDFs", importPick: "Choose files", importing: "Reading recipe", importDone: "Imported", importDup: "already saved", importFail: "failed",
     importOne: "All selected files are ONE recipe (several screenshots of the same recipe)",
@@ -152,6 +154,7 @@ const STR = {
     adaptHint: "Zmień ten przepis: ", newRecipe: "Przepis gotowy", noSteps: "(brak kroków)",
     keepAwake: "Ekran nie gaśnie podczas gotowania", difficulty: { easy: "łatwy", medium: "średni", advanced: "zaawansowany" },
     reverse: "↺ Obroty wsteczne",
+    sources: "Źródła przepisu (otwórz w przeglądarce)", confirmClear: "Wyczyścić rozmowę? Zapisane przepisy zostają.",
     saveSettings: "Zapisz ustawienia", settingsSaved: "Zapisano ✓", keySet: "Klucz API jest zapisany na tym telefonie.", keyMissing: "Brak zapisanego klucza API.",
     importTitle: "Importuj przepisy ze zdjęć lub PDF", importPick: "Wybierz pliki", importing: "Czytam przepis", importDone: "Zaimportowano", importDup: "już zapisane", importFail: "błędy",
     importOne: "Wszystkie pliki to JEDEN przepis (kilka zrzutów ekranu tego samego przepisu)",
@@ -186,7 +189,8 @@ function normRecipe(r) {
     difficulty: r.difficulty || "", equipment: Array.isArray(r.equipment) ? r.equipment : [],
     ingredients: Array.isArray(r.ingredients) ? r.ingredients.map(i => typeof i === "string" ? { amount: "", name: i, group: "" } : i) : [],
     steps: steps.map(s => ({ text: s.text || "", tm: s.tm && typeof s.tm === "object" ? s.tm : null, timer_min: s.timer_min || null })),
-    tips: Array.isArray(r.tips) ? r.tips : []
+    tips: Array.isArray(r.tips) ? r.tips : [],
+    sources: Array.isArray(r.sources) ? r.sources.filter(s => s && /^https:\/\//.test(s.url)) : []
   };
 }
 function parseSecs(str) {
@@ -211,7 +215,12 @@ function recipeBody(r, withTitle = true) {
     ${groups.map(g => `${g.g ? `<div class="mute"><b>${esc(g.g)}</b></div>` : ""}<ul class="ing">${g.items.map(i => `<li><b>${esc(i.amount)}</b><span>${esc(i.name)}</span></li>`).join("")}</ul>`).join("")}
     <h3>${t("steps")}</h3>
     ${r.steps.length ? `<ol class="steps">${r.steps.map(s => `<li>${esc(s.text)}${tmChips(s)}</li>`).join("")}</ol>` : `<div class="mute">${t("noSteps")}</div>`}
-    ${r.tips.length ? `<h3>${t("tips")}</h3><ul>${r.tips.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}`;
+    ${r.tips.length ? `<h3>${t("tips")}</h3><ul>${r.tips.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
+    ${sourceLinks(r.sources)}`;
+}
+function sourceLinks(list) {
+  const ok = (list || []).filter(s => s && /^https:\/\//.test(s.url));
+  return ok.length ? `<div class="src"><b>${t("sources")}</b><br>${ok.map(s => `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.title || s.url)}</a>`).join("<br>")}</div>` : "";
 }
 function tmChips(s) {
   const c = [];
@@ -241,6 +250,7 @@ function viewChat() {
   $("#view").innerHTML = `<div class="chat"><div id="msgs"></div>
     <div class="thumbs" id="thumbs"></div>
     <div class="compose"><button class="icon-btn" id="attach" title="${esc(t("attach"))}">📷</button>
+    <button class="icon-btn" id="clearBtn" title="${esc(t("clearChat"))}">🗑</button>
     <input type="file" id="file" accept="image/*" class="hidden" multiple>
     <textarea id="input" rows="1" placeholder="${esc(t("placeholder"))}"></textarea>
     <button class="icon-btn" id="sendBtn" style="background:var(--accent);color:var(--accent-ink);border:0">➤</button></div></div>`;
@@ -261,7 +271,7 @@ function renderMsgs() {
         <button class="btn sec" data-act="saveMsg" data-i="${i}" ${savedAlready ? "disabled" : ""}>${savedAlready ? t("saved") : t("save")}</button>
         <button class="btn sec" data-act="shopMsg" data-i="${i}">${t("toShop")}</button></div></div>`;
     }
-    return `<div class="bubble ${m.role}">${imgs}${txt}${card}</div>`;
+    return `<div class="bubble ${m.role}">${imgs}${txt}${card}${sourceLinks(m.sources)}</div>`;
   }).join("") + (busy ? `<div class="bubble model"><span class="dots"><i></i><i></i><i></i></span></div>` : "");
   box.scrollTop = box.scrollHeight;
 }
@@ -292,22 +302,29 @@ async function callGemini() {
     role: m.role,
     parts: [...(m.images || []).map(d => ({ inline_data: { mime_type: "image/jpeg", data: d } })), { text: m.apiText || m.raw || m.text || " " }]
   }));
-  return geminiRequest(systemPrompt(), contents, 0.6);
+  return geminiRequest(systemPrompt(), contents, 0.6, true);
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-async function geminiRequest(sys, contents, temperature) {
+async function geminiRequest(sys, contents, temperature, useSearch) {
+  let search = !!useSearch; // Google Search grounding: lets the AI find real recipes and return their links
   for (let attempt = 0; ; attempt++) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.model)}:generateContent`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": settings.apiKey },
-      body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents, generationConfig: { temperature } })
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents, ...(search ? { tools: [{ google_search: {} }] } : {}), generationConfig: { temperature } })
     });
     const j = await r.json().catch(() => ({}));
     if ((r.status === 429 || r.status === 503) && attempt < 3) { await sleep(20000); continue; } // rate limit / busy: wait and retry
+    if (r.status === 400 && search) { search = false; continue; } // this model may not support search: retry without it
     if (!r.ok) throw new Error(j.error?.message || ("HTTP " + r.status));
     const text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
     if (!text) throw new Error(j.promptFeedback?.blockReason || "Empty reply");
-    return text;
+    const sources = [];
+    for (const c of j.candidates?.[0]?.groundingMetadata?.groundingChunks || []) {
+      const w = c.web;
+      if (w?.uri && /^https:\/\//.test(w.uri) && !sources.some(s => s.url === w.uri)) sources.push({ title: w.title || w.uri, url: w.uri });
+    }
+    return { text, sources };
   }
 }
 const extractPrompt = () => "You turn photos, screenshots or PDFs of ONE recipe into structured data. Copy the recipe faithfully: keep the original title, ingredients with their amounts, the order of the steps and every Thermomix setting (time, temperature, speed, reverse, mode) exactly as shown. Do not invent, improve or add anything. If a part is unreadable, leave it out. Keep the recipe's original language. Several images belong to the same recipe, in reading order. Answer with ONE fenced code block labelled recipe containing only valid JSON in this shape: " + RECIPE_SCHEMA + '. In "tm", time like "5 sec" or "10 min", temp like "100" or "Varoma", speed like "1" or "Turbo"; use null for steps without machine settings. If the files do not contain a recipe, answer exactly: NO_RECIPE';
@@ -324,7 +341,7 @@ function fileToPart(file) {
 async function extractRecipe(files) {
   const parts = []; for (const f of files) parts.push(await fileToPart(f));
   parts.push({ text: "Extract the recipe." });
-  const raw = await geminiRequest(extractPrompt(),[{ role: "user", parts }], 0.1);
+  const { text: raw } = await geminiRequest(extractPrompt(), [{ role: "user", parts }], 0.1);
   const { recipe } = splitReply(raw);
   if (!recipe || !recipe.steps.length) throw new Error("No recipe found");
   return recipe;
@@ -365,8 +382,9 @@ async function send() {
   ta.value = ""; ta.style.height = "auto"; pendingImages = []; renderThumbs();
   busy = true; renderMsgs();
   try {
-    const raw = await callGemini(), { text: shown, recipe } = splitReply(raw);
-    chat.push({ role: "model", text: shown, raw, recipe });
+    const { text: raw, sources } = await callGemini(), { text: shown, recipe } = splitReply(raw);
+    if (recipe) recipe.sources = sources;
+    chat.push({ role: "model", text: shown, raw, recipe, sources: recipe ? undefined : sources });
   } catch (e) {
     chat.push({ role: "model", text: t("error") + e.message });
   }
@@ -541,6 +559,7 @@ document.addEventListener("click", async e => {
   const lg = e.target.closest("#langSeg button");
   if (lg) { settings.lang = lg.dataset.lang; saveSettings(); renderChrome(); if (tab === "settings") viewSettings(); return; }
   if (e.target.id === "attach") return $("#file").click();
+  if (e.target.id === "clearBtn") { if (chat.length && confirm(t("confirmClear"))) { chat = []; pendingContext = null; saveChat(); renderMsgs(); } return; }
   if (e.target.id === "sendBtn") return send();
   const el = e.target.closest("[data-act]"); if (!el) return;
   const a = el.dataset.act, msg = chat[+el.dataset.i];
@@ -574,7 +593,7 @@ document.addEventListener("click", async e => {
     }
     case "import": return $("#impFile").click();
     case "impPick": return $("#impFiles").click();
-    case "clearChat": chat = []; saveChat(); toast("OK"); return;
+    case "clearChat": chat = []; pendingContext = null; saveChat(); toast("OK"); return;
     case "cookClose": return closeCook();
     case "cookPrev": cook.i = Math.max(-1, cook.i - 1); return renderCook();
     case "cookNext": if (cook.i >= cook.r.steps.length) return closeCook(); cook.i++; return renderCook();

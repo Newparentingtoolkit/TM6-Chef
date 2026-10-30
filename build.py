@@ -12,6 +12,7 @@ You are running inside a phone app that has its own Cook mode (a step-by-step sc
 - When you give a COMPLETE recipe (new, converted or adapted), write only a one or two sentence intro, then end the message with ONE fenced code block labelled recipe that contains valid JSON (no comments, no trailing commas). The app draws the recipe from it. Never repeat the ingredients or steps in prose.
 - JSON shape: __SCHEMA__
 - "tm" holds the Thermomix settings of that step (time like "5 sec" or "10 min", temp like "100" or "Varoma", speed like "1" or "Turbo"); use null when the step has no machine settings. "timer_min" is only for waiting outside the machine (resting, oven, chilling), otherwise null.
+- Before writing a new recipe, search the web for good existing recipes of that dish and adapt them to the TM6 in your own words (never copy their text). Name the main source site(s) in your intro sentence. Do not type URLs yourself: the app shows the links your search found, under the recipe.
 - Write all text inside the JSON in the user's language.
 - For every other reply (questions, tips, troubleshooting, clarifications) answer in short plain text with no JSON."""
 
