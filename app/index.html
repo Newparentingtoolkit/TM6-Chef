@@ -125,7 +125,8 @@ const STR = {
     imported: "Backup imported", thinking: "Thinking…", attach: "Add a photo", error: "Something went wrong: ",
     adaptHint: "Adapt this recipe: ", newRecipe: "Recipe ready", noSteps: "(no steps)",
     keepAwake: "Screen stays on while cooking", difficulty: { easy: "easy", medium: "medium", advanced: "advanced" },
-    reverse: "↺ Reverse"
+    reverse: "↺ Reverse",
+    saveSettings: "Save settings", settingsSaved: "Saved ✓", keySet: "API key is saved on this phone.", keyMissing: "No API key saved yet."
   },
   pl: {
     chat: "Czat", library: "Przepisy", shop: "Zakupy", settings: "Ustawienia",
@@ -147,7 +148,8 @@ const STR = {
     imported: "Zaimportowano kopię", thinking: "Myślę…", attach: "Dodaj zdjęcie", error: "Coś poszło nie tak: ",
     adaptHint: "Zmień ten przepis: ", newRecipe: "Przepis gotowy", noSteps: "(brak kroków)",
     keepAwake: "Ekran nie gaśnie podczas gotowania", difficulty: { easy: "łatwy", medium: "średni", advanced: "zaawansowany" },
-    reverse: "↺ Obroty wsteczne"
+    reverse: "↺ Obroty wsteczne",
+    saveSettings: "Zapisz ustawienia", settingsSaved: "Zapisano ✓", keySet: "Klucz API jest zapisany na tym telefonie.", keyMissing: "Brak zapisanego klucza API."
   }
 };
 
@@ -396,6 +398,8 @@ function viewSettings() {
     <select id="s_lang"><option value="en">English</option><option value="pl">Polski</option></select>
     <label for="s_ui">${t("uiLang")}</label>
     <select id="s_ui"><option value="en">English</option><option value="pl">Polski</option></select>
+    <div class="row"><button class="btn" data-act="saveSettings">${t("saveSettings")}</button></div>
+    <div class="mute" id="keyState">${settings.apiKey ? t("keySet") : t("keyMissing")}</div>
     <label>${t("data")}</label>
     <div class="row"><button class="btn sec" data-act="export">${t("exportData")}</button>
     <button class="btn sec" data-act="import">${t("importData")}</button>
@@ -503,6 +507,10 @@ document.addEventListener("click", async e => {
       else { try { await navigator.clipboard.writeText(txt); toast("Copied"); } catch { } }
       return;
     }
+    case "saveSettings": {
+      settings.apiKey = $("#s_key").value.trim(); settings.model = $("#s_model").value.trim() || "gemini-2.5-flash";
+      saveSettings(); $("#keyState").textContent = settings.apiKey ? t("keySet") : t("keyMissing"); return toast(t("settingsSaved"));
+    }
     case "export": {
       const blob = new Blob([JSON.stringify({ recipes, shop, settings: { ...settings, apiKey: "" } }, null, 1)], { type: "application/json" });
       const u = URL.createObjectURL(blob), l = document.createElement("a"); l.href = u; l.download = "tm6-chef-backup.json"; l.click(); setTimeout(() => URL.revokeObjectURL(u), 3000); return;
@@ -520,6 +528,8 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("input", e => {
   if (e.target.id === "q") fillList(e.target.value);
+  if (e.target.id === "s_key") { settings.apiKey = e.target.value.trim(); saveSettings(); const k = $("#keyState"); if (k) k.textContent = settings.apiKey ? t("keySet") : t("keyMissing"); }
+  if (e.target.id === "s_model") { settings.model = e.target.value.trim() || "gemini-2.5-flash"; saveSettings(); }
   if (e.target.id === "input") { e.target.style.height = "auto"; e.target.style.height = Math.min(120, e.target.scrollHeight) + "px"; }
 });
 document.addEventListener("change", async e => {
