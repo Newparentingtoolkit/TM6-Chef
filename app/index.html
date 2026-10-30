@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f6f54">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<title>TM6 Chef</title>
+<style>
+:root{--bg:#f6f4ef;--card:#fff;--ink:#1d2321;--mute:#66706b;--line:#e2ded4;--accent:#1f6f54;--accent-ink:#fff;--chip:#e8f2ed;--warn:#b3412a}
+@media (prefers-color-scheme:dark){:root{--bg:#141816;--card:#1d2321;--ink:#eef1ef;--mute:#9aa6a0;--line:#2c3532;--accent:#4fb58c;--accent-ink:#0b1410;--chip:#24332d;--warn:#e58a72}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top));border-bottom:1px solid var(--line);background:var(--card)}
+header h1{font-size:18px;margin:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{border:0;background:none;color:var(--mute);padding:6px 12px;font-weight:600;font-size:14px}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+main{flex:1;overflow-y:auto;padding:12px 16px 20px;-webkit-overflow-scrolling:touch}
+nav{display:flex;border-top:1px solid var(--line);background:var(--card);padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;color:var(--mute);padding:10px 4px;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button span{font-size:20px;line-height:1}
+nav button.on{color:var(--accent);font-weight:700}
+button{font:inherit;cursor:pointer}
+.btn{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.sec{background:var(--chip);color:var(--ink)}
+.btn.danger{background:none;color:var(--warn);border:1px solid var(--warn)}
+.btn.big{padding:16px 20px;font-size:18px;border-radius:16px}
+.btn[disabled]{opacity:.5}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.row>.btn{flex:1;min-width:120px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+.mute{color:var(--mute);font-size:14px}
+h2{font-size:20px;margin:6px 0}
+h3{font-size:16px;margin:16px 0 6px}
+.chat{display:flex;flex-direction:column;height:100%}
+#msgs{flex:1;overflow-y:auto;padding-bottom:8px}
+.bubble{max-width:92%;padding:10px 14px;border-radius:16px;margin:8px 0;word-wrap:break-word;overflow-wrap:anywhere}
+.bubble.user{background:var(--accent);color:var(--accent-ink);margin-left:auto;border-bottom-right-radius:4px}
+.bubble.model{background:var(--card);border:1px solid var(--line);border-bottom-left-radius:4px}
+.bubble img{max-width:100%;border-radius:10px;display:block;margin-bottom:6px}
+.compose{display:flex;gap:8px;align-items:flex-end;padding-top:8px}
+.compose textarea{flex:1;resize:none;border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--card);color:var(--ink);font:inherit;max-height:120px}
+.icon-btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;width:44px;height:44px;font-size:20px}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap}
+.thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px}
+input[type=text],input[type=password],input[type=search],select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit}
+label{display:block;font-weight:600;margin:14px 0 4px}
+ul.ing{list-style:none;padding:0;margin:0}
+ul.ing li{padding:6px 0;border-bottom:1px solid var(--line);display:flex;gap:10px}
+ul.ing li b{min-width:76px}
+ol.steps{padding-left:22px;margin:0}
+ol.steps li{margin:10px 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.chip{background:var(--chip);border-radius:999px;padding:3px 10px;font-weight:700;font-size:14px;border:0;color:var(--ink)}
+.meta{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.dots{display:inline-flex;gap:4px}.dots i{width:7px;height:7px;border-radius:50%;background:var(--mute);animation:b 1s infinite}.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{opacity:.2}}
+.shop li{align-items:center}
+.shop li.done span{text-decoration:line-through;color:var(--mute)}
+.hidden{display:none!important}
+/* Cook mode */
+#cook{position:fixed;inset:0;background:var(--bg);z-index:10;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+#cook .top{display:flex;align-items:center;gap:10px;padding:10px 16px}
+#cook .top .t{flex:1;min-width:0}
+#cook .top .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar{height:6px;background:var(--line)}.bar>i{display:block;height:100%;background:var(--accent);transition:width .25s}
+#cookBody{flex:1;overflow-y:auto;padding:16px}
+.bigtext{font-size:24px;line-height:1.35;margin:12px 0 18px}
+.setting{display:flex;gap:10px;flex-wrap:wrap}
+.set{background:var(--chip);border:0;border-radius:16px;padding:12px 16px;text-align:center;min-width:92px;color:var(--ink)}
+.set small{display:block;color:var(--mute);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.set b{font-size:26px}
+.timers{padding:0 16px}
+.tm{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;margin:6px 0}
+.tm.done{border-color:var(--warn);color:var(--warn);font-weight:700}
+.tm b{font-size:20px;font-variant-numeric:tabular-nums}
+#cook .foot{display:flex;gap:10px;padding:12px 16px}
+#cook .foot .btn{flex:1}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:12px;z-index:20;max-width:88%;text-align:center}
+</style>
+</head>
+<body>
+<header>
+  <h1>🍲 TM6 Chef</h1>
+  <div class="seg" id="langSeg"><button data-lang="en">EN</button><button data-lang="pl">PL</button></div>
+</header>
+<main id="view"></main>
+<nav id="nav"></nav>
+<div id="cook" class="hidden"></div>
+<div id="toast" class="hidden"></div>
+<script src="prompt.js"></script>
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem("tm6." + k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem("tm6." + k, JSON.stringify(v)); } catch { } }
+};
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+/* ---------- strings ---------- */
+const STR = {
+  en: {
+    chat: "Chat", library: "Recipes", shop: "Shopping", settings: "Settings",
+    placeholder: "Ask for a recipe, or paste/photograph one to convert…",
+    needKey: "Add your Gemini API key in Settings first.",
+    save: "Save", saved: "Saved ✓", cook: "Start cooking", toShop: "Add to shopping list", added: "Added to shopping list",
+    adapt: "Adapt with AI", del: "Delete", confirmDel: "Delete this recipe?",
+    ingredients: "Ingredients", steps: "Steps", equipment: "Equipment", tips: "Tips",
+    servings: "servings", prep: "Prep", cookT: "Cook", total: "Total", min: "min",
+    emptyLib: "No saved recipes yet. Ask the chat for one and tap Save.", sample: "Try a sample recipe",
+    search: "Search recipes…", back: "Back", next: "Next", prev: "Previous", start: "Start", finish: "Finish",
+    before: "Before you start", step: "Step", of: "of", enjoy: "Enjoy your meal! 🍽️", close: "Close",
+    timer: "Timer", startTimer: "Start timer", timeUp: "Time is up!", dismiss: "OK", ingBtn: "Ingredients",
+    shopEmpty: "Your shopping list is empty. Open a recipe and tap “Add to shopping list”.",
+    clearDone: "Remove ticked", clearAll: "Clear all", share: "Share list",
+    apiKey: "Gemini API key", keyHelp: "Free key from aistudio.google.com/apikey. It is stored only on this phone and sent only to Google.",
+    model: "Gemini model", recipeLang: "Recipe & chat language", uiLang: "App interface language",
+    data: "Your data", exportData: "Export backup", importData: "Import backup", clearChat: "Clear chat",
+    imported: "Backup imported", thinking: "Thinking…", attach: "Add a photo", error: "Something went wrong: ",
+    adaptHint: "Adapt this recipe: ", newRecipe: "Recipe ready", noSteps: "(no steps)",
+    keepAwake: "Screen stays on while cooking", difficulty: { easy: "easy", medium: "medium", advanced: "advanced" },
+    reverse: "↺ Reverse"
+  },
+  pl: {
+    chat: "Czat", library: "Przepisy", shop: "Zakupy", settings: "Ustawienia",
+    placeholder: "Poproś o przepis albo wklej/sfotografuj przepis do przerobienia…",
+    needKey: "Najpierw dodaj klucz API Gemini w Ustawieniach.",
+    save: "Zapisz", saved: "Zapisano ✓", cook: "Zacznij gotować", toShop: "Dodaj do listy zakupów", added: "Dodano do listy zakupów",
+    adapt: "Zmień z AI", del: "Usuń", confirmDel: "Usunąć ten przepis?",
+    ingredients: "Składniki", steps: "Kroki", equipment: "Sprzęt", tips: "Wskazówki",
+    servings: "porcji", prep: "Przygotowanie", cookT: "Gotowanie", total: "Razem", min: "min",
+    emptyLib: "Brak zapisanych przepisów. Poproś czat o przepis i kliknij Zapisz.", sample: "Wypróbuj przykładowy przepis",
+    search: "Szukaj przepisów…", back: "Wstecz", next: "Dalej", prev: "Poprzedni", start: "Start", finish: "Zakończ",
+    before: "Zanim zaczniesz", step: "Krok", of: "z", enjoy: "Smacznego! 🍽️", close: "Zamknij",
+    timer: "Minutnik", startTimer: "Uruchom minutnik", timeUp: "Czas minął!", dismiss: "OK", ingBtn: "Składniki",
+    shopEmpty: "Lista zakupów jest pusta. Otwórz przepis i kliknij „Dodaj do listy zakupów”.",
+    clearDone: "Usuń zaznaczone", clearAll: "Wyczyść wszystko", share: "Udostępnij listę",
+    apiKey: "Klucz API Gemini", keyHelp: "Darmowy klucz z aistudio.google.com/apikey. Zapisany tylko na tym telefonie i wysyłany tylko do Google.",
+    model: "Model Gemini", recipeLang: "Język przepisów i czatu", uiLang: "Język interfejsu",
+    data: "Twoje dane", exportData: "Eksportuj kopię", importData: "Importuj kopię", clearChat: "Wyczyść czat",
+    imported: "Zaimportowano kopię", thinking: "Myślę…", attach: "Dodaj zdjęcie", error: "Coś poszło nie tak: ",
+    adaptHint: "Zmień ten przepis: ", newRecipe: "Przepis gotowy", noSteps: "(brak kroków)",
+    keepAwake: "Ekran nie gaśnie podczas gotowania", difficulty: { easy: "łatwy", medium: "średni", advanced: "zaawansowany" },
+    reverse: "↺ Obroty wsteczne"
+  }
+};
+
+/* ---------- state ---------- */
+let settings = Object.assign({ apiKey: "", model: "gemini-2.5-flash", lang: "en", uiLang: "en" }, store.get("settings", {}));
+let recipes = store.get("recipes", []);
+let shop = store.get("shop", []);
+let chat = store.get("chat", []);
+let tab = "chat", detailId = null, busy = false, pendingImages = [], pendingContext = null;
+const t = k => (STR[settings.uiLang] || STR.en)[k] ?? STR.en[k] ?? k;
+const saveSettings = () => store.set("settings", settings);
+const saveRecipes = () => store.set("recipes", recipes);
+const saveShop = () => store.set("shop", shop);
+const saveChat = () => store.set("chat", chat.slice(-40).map(m => ({ ...m, images: undefined })));
+
+function toast(msg) {
+  const el = $("#toast"); el.textContent = msg; el.classList.remove("hidden");
+  clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.add("hidden"), 2600);
+}
+
+/* ---------- recipe helpers ---------- */
+function normRecipe(r) {
+  r = r || {};
+  const steps = Array.isArray(r.steps) ? r.steps.map(s => typeof s === "string" ? { text: s } : s) : [];
+  return {
+    id: r.id || uid(), title: r.title || "Recipe", description: r.description || "",
+    servings: r.servings || 4, prep_min: r.prep_min || 0, cook_min: r.cook_min || 0, total_min: r.total_min || 0,
+    difficulty: r.difficulty || "", equipment: Array.isArray(r.equipment) ? r.equipment : [],
+    ingredients: Array.isArray(r.ingredients) ? r.ingredients.map(i => typeof i === "string" ? { amount: "", name: i, group: "" } : i) : [],
+    steps: steps.map(s => ({ text: s.text || "", tm: s.tm && typeof s.tm === "object" ? s.tm : null, timer_min: s.timer_min || null })),
+    tips: Array.isArray(r.tips) ? r.tips : []
+  };
+}
+function parseSecs(str) {
+  if (!str) return 0;
+  let total = 0, m; const re = /(\d+(?:[.,]\d+)?)\s*(h|godz|hr|hour|min|m|sec|sek|s)\w*/gi;
+  while ((m = re.exec(String(str)))) {
+    const n = parseFloat(m[1].replace(",", ".")), u = m[2].toLowerCase();
+    total += /^(h|godz|hr|hour)/.test(u) ? n * 3600 : /^(min|m)$/.test(u) ? n * 60 : n;
+  }
+  return Math.round(total);
+}
+function recipeBody(r, withTitle = true) {
+  const groups = []; let last = null;
+  r.ingredients.forEach(i => { const g = i.group || ""; if (g !== last || !groups.length) { groups.push({ g, items: [] }); last = g; } groups[groups.length - 1].items.push(i); });
+  const meta = [`${r.servings} ${t("servings")}`, r.prep_min ? `${t("prep")} ${r.prep_min} ${t("min")}` : "", r.cook_min ? `${t("cookT")} ${r.cook_min} ${t("min")}` : "",
+    r.total_min ? `${t("total")} ${r.total_min} ${t("min")}` : "", r.difficulty ? (t("difficulty")[r.difficulty] || r.difficulty) : ""].filter(Boolean);
+  return `${withTitle ? `<h2>${esc(r.title)}</h2>` : ""}
+    ${r.description ? `<div class="mute">${esc(r.description)}</div>` : ""}
+    <div class="meta">${meta.map(m => `<span class="chip">${esc(m)}</span>`).join("")}</div>
+    ${r.equipment.length ? `<h3>${t("equipment")}</h3><div class="mute">${esc(r.equipment.join(", "))}</div>` : ""}
+    <h3>${t("ingredients")}</h3>
+    ${groups.map(g => `${g.g ? `<div class="mute"><b>${esc(g.g)}</b></div>` : ""}<ul class="ing">${g.items.map(i => `<li><b>${esc(i.amount)}</b><span>${esc(i.name)}</span></li>`).join("")}</ul>`).join("")}
+    <h3>${t("steps")}</h3>
+    ${r.steps.length ? `<ol class="steps">${r.steps.map(s => `<li>${esc(s.text)}${tmChips(s)}</li>`).join("")}</ol>` : `<div class="mute">${t("noSteps")}</div>`}
+    ${r.tips.length ? `<h3>${t("tips")}</h3><ul>${r.tips.map(x => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}`;
+}
+function tmChips(s) {
+  const c = [];
+  if (s.tm) {
+    if (s.tm.mode) c.push(s.tm.mode);
+    if (s.tm.time) c.push(s.tm.time);
+    if (s.tm.temp) c.push(/°|C$/i.test(s.tm.temp) ? s.tm.temp : s.tm.temp + " °C");
+    if (s.tm.reverse) c.push(t("reverse"));
+    if (s.tm.speed) c.push(/^turbo$/i.test(s.tm.speed) ? "Turbo" : "🥄 " + s.tm.speed);
+  }
+  if (s.timer_min) c.push("⏲ " + s.timer_min + " " + t("min"));
+  return c.length ? `<div class="chips">${c.map(x => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : "";
+}
+
+/* ---------- render shell ---------- */
+function renderChrome() {
+  document.documentElement.lang = settings.uiLang;
+  document.querySelectorAll("#langSeg button").forEach(b => b.classList.toggle("on", b.dataset.lang === settings.lang));
+  const tabs = [["chat", "💬", t("chat")], ["library", "📖", t("library")], ["shop", "🛒", t("shop")], ["settings", "⚙️", t("settings")]];
+  $("#nav").innerHTML = tabs.map(([k, i, l]) => `<button data-tab="${k}" class="${tab === k ? "on" : ""}"><span>${i}</span>${l}</button>`).join("");
+}
+function render() { renderChrome(); ({ chat: viewChat, library: viewLibrary, shop: viewShop, settings: viewSettings })[tab](); }
+function setTab(k) { tab = k; if (k !== "library") detailId = null; render(); }
+
+/* ---------- chat ---------- */
+function viewChat() {
+  $("#view").innerHTML = `<div class="chat"><div id="msgs"></div>
+    <div class="thumbs" id="thumbs"></div>
+    <div class="compose"><button class="icon-btn" id="attach" title="${esc(t("attach"))}">📷</button>
+    <input type="file" id="file" accept="image/*" class="hidden" multiple>
+    <textarea id="input" rows="1" placeholder="${esc(t("placeholder"))}"></textarea>
+    <button class="icon-btn" id="sendBtn" style="background:var(--accent);color:var(--accent-ink);border:0">➤</button></div></div>`;
+  $("#view").style.padding = "12px 16px 8px";
+  renderMsgs(); renderThumbs();
+}
+function mdLite(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/^\s*[-*]\s+/gm, "• ").replace(/\n/g, "<br>"); }
+function renderMsgs() {
+  const box = $("#msgs"); if (!box) return;
+  box.innerHTML = chat.map((m, i) => {
+    const imgs = (m.images || []).map(d => `<img src="data:image/jpeg;base64,${d}" alt="">`).join("");
+    const txt = m.text ? `<div>${mdLite(m.text)}</div>` : "";
+    let card = "";
+    if (m.recipe) {
+      const r = m.recipe, savedAlready = recipes.some(x => x.id === r.id);
+      card = `<div class="card" style="margin:8px 0 0">${recipeBody(r)}
+        <div class="row"><button class="btn" data-act="cookMsg" data-i="${i}">${t("cook")}</button>
+        <button class="btn sec" data-act="saveMsg" data-i="${i}" ${savedAlready ? "disabled" : ""}>${savedAlready ? t("saved") : t("save")}</button>
+        <button class="btn sec" data-act="shopMsg" data-i="${i}">${t("toShop")}</button></div></div>`;
+    }
+    return `<div class="bubble ${m.role}">${imgs}${txt}${card}</div>`;
+  }).join("") + (busy ? `<div class="bubble model"><span class="dots"><i></i><i></i><i></i></span></div>` : "");
+  box.scrollTop = box.scrollHeight;
+}
+function renderThumbs() {
+  const el = $("#thumbs"); if (!el) return;
+  el.innerHTML = pendingImages.map(d => `<img src="data:image/jpeg;base64,${d}" alt="">`).join("");
+}
+function fileToB64(file) {
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const s = Math.min(1, 1600 / Math.max(img.width, img.height)), c = document.createElement("canvas");
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      res(c.toDataURL("image/jpeg", 0.85).split(",")[1]);
+    };
+    img.onerror = rej; img.src = url;
+  });
+}
+function systemPrompt() {
+  const langName = settings.lang === "pl" ? "Polish" : "English";
+  return GEM_PROMPT + "\n\n" + APP_ADDENDUM + "\n\nDEFAULT LANGUAGE: " + langName + ". Use it unless the user writes in the other language or asks you to switch.";
+}
+async function callGemini() {
+  let msgs = chat.slice(-24).filter(m => m.role === "user" || m.role === "model");
+  while (msgs.length && msgs[0].role !== "user") msgs.shift();
+  const contents = msgs.map(m => ({
+    role: m.role,
+    parts: [...(m.images || []).map(d => ({ inline_data: { mime_type: "image/jpeg", data: d } })), { text: m.apiText || m.raw || m.text || " " }]
+  }));
+  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.model)}:generateContent`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": settings.apiKey },
+    body: JSON.stringify({ systemInstruction: { parts: [{ text: systemPrompt() }] }, contents, generationConfig: { temperature: 0.6 } })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error?.message || ("HTTP " + r.status));
+  const text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
+  if (!text) throw new Error(j.promptFeedback?.blockReason || "Empty reply");
+  return text;
+}
+function splitReply(raw) {
+  const re = /```(?:recipe|json)\s*([\s\S]*?)```/i, m = raw.match(re);
+  let recipe = null;
+  if (m) { try { recipe = normRecipe(JSON.parse(m[1])); } catch { recipe = null; } }
+  return { text: (recipe ? raw.replace(re, "") : raw).trim(), recipe };
+}
+async function send() {
+  if (busy) return;
+  const ta = $("#input"), text = ta.value.trim();
+  if (!text && !pendingImages.length) return;
+  if (!settings.apiKey) { toast(t("needKey")); setTab("settings"); return; }
+  let apiText = text || "(photo)";
+  if (pendingContext) { apiText = "Current recipe (JSON):\n" + JSON.stringify(pendingContext) + "\n\n" + apiText; pendingContext = null; }
+  chat.push({ role: "user", text, apiText, images: pendingImages.slice() });
+  ta.value = ""; ta.style.height = "auto"; pendingImages = []; renderThumbs();
+  busy = true; renderMsgs();
+  try {
+    const raw = await callGemini(), { text: shown, recipe } = splitReply(raw);
+    chat.push({ role: "model", text: shown, raw, recipe });
+  } catch (e) {
+    chat.push({ role: "model", text: t("error") + e.message });
+  }
+  busy = false; saveChat(); renderMsgs();
+}
+
+/* ---------- library ---------- */
+function viewLibrary() {
+  $("#view").style.padding = "";
+  if (detailId) {
+    const r = recipes.find(x => x.id === detailId);
+    if (!r) { detailId = null; return viewLibrary(); }
+    $("#view").innerHTML = `<button class="btn sec" data-act="libBack">← ${t("back")}</button>
+      <div class="card">${recipeBody(r)}</div>
+      <div class="row"><button class="btn" data-act="cookLib">${t("cook")}</button>
+      <button class="btn sec" data-act="shopLib">${t("toShop")}</button></div>
+      <div class="row"><button class="btn sec" data-act="adaptLib">${t("adapt")}</button>
+      <button class="btn danger" data-act="delLib">${t("del")}</button></div>`;
+    return;
+  }
+  $("#view").innerHTML = `<input type="search" id="q" placeholder="${esc(t("search"))}"><div id="list"></div>`;
+  fillList("");
+}
+function fillList(q) {
+  const l = recipes.filter(r => (r.title + " " + r.ingredients.map(i => i.name).join(" ")).toLowerCase().includes(q.toLowerCase()));
+  $("#list").innerHTML = l.length ? l.map(r => `<div class="card" data-act="openLib" data-id="${r.id}" style="cursor:pointer">
+      <b>${esc(r.title)}</b><div class="mute">${esc(r.description)}</div>
+      <div class="meta"><span class="chip">${r.servings} ${t("servings")}</span>${r.total_min ? `<span class="chip">${r.total_min} ${t("min")}</span>` : ""}</div></div>`).join("")
+    : `<div class="card mute">${t("emptyLib")}</div><button class="btn sec" data-act="sample">${t("sample")}</button>`;
+}
+const SAMPLE = {
+  title: "Creamy tomato soup", description: "Quick weeknight soup, all in the bowl.", servings: 4, prep_min: 10, cook_min: 25, total_min: 35, difficulty: "easy",
+  equipment: ["simmering basket"],
+  ingredients: [{ amount: "1", name: "onion, halved" }, { amount: "2 cloves", name: "garlic" }, { amount: "20 g", name: "olive oil" },
+    { amount: "800 g", name: "canned tomatoes" }, { amount: "300 g", name: "water" }, { amount: "1 tsp", name: "salt" }, { amount: "100 g", name: "cream" }],
+  steps: [
+    { text: "Place onion and garlic into the mixing bowl and chop. Scrape down the sides.", tm: { time: "5 sec", speed: "5" } },
+    { text: "Add olive oil and sauté.", tm: { time: "3 min", temp: "120", speed: "1", reverse: false } },
+    { text: "Add tomatoes, water and salt. Place the simmering basket on the lid instead of the measuring cup.", tm: { time: "20 min", temp: "100", speed: "1", reverse: true } },
+    { text: "Add cream and blend until smooth, starting low and increasing the speed.", tm: { time: "1 min", speed: "5-10" } },
+    { text: "Let the soup rest before serving.", timer_min: 2 }
+  ],
+  tips: ["Keeps 3 days in the fridge.", "Freezes well for 2 months."]
+};
+
+/* ---------- shopping ---------- */
+function addToShop(r) {
+  r.ingredients.forEach(i => {
+    const m = String(i.amount || "").trim().match(/^(\d+(?:[.,]\d+)?)\s*(.*)$/);
+    const qty = m ? parseFloat(m[1].replace(",", ".")) : null, unit = m ? m[2].trim() : String(i.amount || "").trim();
+    const name = (i.name || "").trim(), key = (name + "|" + unit).toLowerCase();
+    const ex = shop.find(x => x.key === key && x.qty != null && qty != null);
+    if (ex) { ex.qty += qty; if (!ex.from.includes(r.title)) ex.from.push(r.title); }
+    else shop.push({ id: uid(), key, name, qty, unit, done: false, from: [r.title] });
+  });
+  saveShop(); toast(t("added"));
+}
+const shopText = x => (x.qty != null ? `${+x.qty.toFixed(2)} ${x.unit} ` : (x.unit ? x.unit + " " : "")) + x.name;
+function viewShop() {
+  $("#view").style.padding = "";
+  if (!shop.length) { $("#view").innerHTML = `<div class="card mute">${t("shopEmpty")}</div>`; return; }
+  $("#view").innerHTML = `<div class="card"><ul class="ing shop">${shop.map(x => `<li class="${x.done ? "done" : ""}">
+      <input type="checkbox" data-act="tick" data-id="${x.id}" ${x.done ? "checked" : ""} style="width:22px;height:22px">
+      <span style="flex:1">${esc(shopText(x))}</span></li>`).join("")}</ul></div>
+    <div class="row"><button class="btn sec" data-act="shopDone">${t("clearDone")}</button>
+    <button class="btn sec" data-act="shopShare">${t("share")}</button>
+    <button class="btn danger" data-act="shopClear">${t("clearAll")}</button></div>`;
+}
+
+/* ---------- settings ---------- */
+function viewSettings() {
+  $("#view").style.padding = "";
+  $("#view").innerHTML = `
+    <label for="s_key">${t("apiKey")}</label>
+    <input type="password" id="s_key" value="${esc(settings.apiKey)}" autocomplete="off" placeholder="AIza…">
+    <div class="mute">${t("keyHelp")}</div>
+    <label for="s_model">${t("model")}</label>
+    <input type="text" id="s_model" value="${esc(settings.model)}">
+    <label for="s_lang">${t("recipeLang")}</label>
+    <select id="s_lang"><option value="en">English</option><option value="pl">Polski</option></select>
+    <label for="s_ui">${t("uiLang")}</label>
+    <select id="s_ui"><option value="en">English</option><option value="pl">Polski</option></select>
+    <label>${t("data")}</label>
+    <div class="row"><button class="btn sec" data-act="export">${t("exportData")}</button>
+    <button class="btn sec" data-act="import">${t("importData")}</button>
+    <button class="btn danger" data-act="clearChat">${t("clearChat")}</button></div>
+    <input type="file" id="impFile" accept="application/json" class="hidden">`;
+  $("#s_lang").value = settings.lang; $("#s_ui").value = settings.uiLang;
+}
+
+/* ---------- cook mode ---------- */
+let cook = null, wl = null, timers = [], audioCtx = null;
+async function wake() { try { wl = await navigator.wakeLock?.request("screen"); } catch { } }
+function openCook(r) {
+  cook = { r, i: -1 }; $("#cook").classList.remove("hidden"); wake(); renderCook();
+}
+function closeCook() { cook = null; $("#cook").classList.add("hidden"); try { wl?.release(); } catch { } wl = null; }
+document.addEventListener("visibilitychange", () => { if (!document.hidden && cook) wake(); });
+function renderCook() {
+  const { r, i } = cook, n = r.steps.length, pct = i < 0 ? 0 : Math.min(100, Math.round((i + 1) / n * 100));
+  let body = "", nextLabel = t("next"), canBack = i >= 0;
+  if (i < 0) {
+    body = `<h2>${t("before")}</h2>${r.equipment.length ? `<div class="mute">${esc(r.equipment.join(", "))}</div>` : ""}
+      <ul class="ing">${r.ingredients.map(x => `<li><b>${esc(x.amount)}</b><span>${esc(x.name)}</span></li>`).join("")}</ul>`;
+    nextLabel = t("start");
+  } else if (i >= n) {
+    body = `<div class="bigtext" style="text-align:center;margin-top:60px">${t("enjoy")}</div>`;
+    nextLabel = t("close");
+  } else {
+    const s = r.steps[i], sets = [];
+    if (s.tm) {
+      if (s.tm.mode) sets.push(["", s.tm.mode, ""]);
+      if (s.tm.time) sets.push(["⏱", s.tm.time, "time", parseSecs(s.tm.time)]);
+      if (s.tm.temp) sets.push(["🌡", /°|C$/i.test(s.tm.temp) ? s.tm.temp : s.tm.temp + " °C", "temp"]);
+      if (s.tm.speed) sets.push(["🥄", s.tm.speed, "speed"]);
+      if (s.tm.reverse) sets.push(["↺", t("reverse").replace("↺ ", ""), ""]);
+    }
+    body = `<div class="bigtext">${esc(s.text)}</div>
+      <div class="setting">${sets.map(([ic, v, l, secs]) => `<button class="set" ${secs ? `data-act="timer" data-secs="${secs}" data-label="${esc(v)}"` : ""}>
+        <small>${ic} ${l}</small><b>${esc(v)}</b></button>`).join("")}</div>
+      ${s.timer_min ? `<div class="row"><button class="btn sec" data-act="timer" data-secs="${s.timer_min * 60}" data-label="${s.timer_min} ${t("min")}">⏲ ${t("startTimer")}: ${s.timer_min} ${t("min")}</button></div>` : ""}`;
+    if (i === n - 1) nextLabel = t("finish");
+  }
+  $("#cook").innerHTML = `<div class="top"><button class="icon-btn" data-act="cookClose" aria-label="${esc(t("close"))}">✕</button>
+      <div class="t"><b>${esc(r.title)}</b><span class="mute">${i >= 0 && i < n ? `${t("step")} ${i + 1} ${t("of")} ${n}` : ""}</span></div>
+      <button class="btn sec" data-act="cookIng">${t("ingBtn")}</button></div>
+    <div class="bar"><i style="width:${pct}%"></i></div>
+    <div id="cookBody">${body}</div><div class="timers" id="timers"></div>
+    <div class="foot">${canBack ? `<button class="btn sec big" data-act="cookPrev">←</button>` : ""}<button class="btn big" data-act="cookNext">${nextLabel} →</button></div>`;
+  renderTimers();
+}
+function startTimer(secs, label) {
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume?.(); } catch { }
+  timers.push({ id: uid(), end: Date.now() + secs * 1000, label, done: false });
+  renderTimers();
+}
+function beep() {
+  try {
+    [0, 0.35, 0.7].forEach(d => {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = 880; o.connect(g); g.connect(audioCtx.destination); g.gain.value = 0.25;
+      o.start(audioCtx.currentTime + d); o.stop(audioCtx.currentTime + d + 0.2);
+    });
+  } catch { }
+  try { navigator.vibrate?.([300, 150, 300, 150, 300]); } catch { }
+}
+const fmtTime = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+function renderTimers() {
+  const el = $("#timers"); if (!el) return;
+  el.innerHTML = timers.map(x => `<div class="tm ${x.done ? "done" : ""}"><span>⏲ ${esc(x.label)}</span>
+    ${x.done ? `<span>${t("timeUp")}</span>` : `<b data-end="${x.end}">${fmtTime(x.end - Date.now())}</b>`}
+    <button class="btn sec" data-act="timerX" data-id="${x.id}">${x.done ? t("dismiss") : "✕"}</button></div>`).join("");
+}
+setInterval(() => {
+  let changed = false;
+  timers.forEach(x => { if (!x.done && Date.now() >= x.end) { x.done = true; changed = true; beep(); } });
+  if (changed) renderTimers();
+  else document.querySelectorAll("#timers b[data-end]").forEach(b => b.textContent = fmtTime(+b.dataset.end - Date.now()));
+}, 500);
+
+/* ---------- events ---------- */
+document.addEventListener("click", async e => {
+  const nav = e.target.closest("#nav button"); if (nav) return setTab(nav.dataset.tab);
+  const lg = e.target.closest("#langSeg button");
+  if (lg) { settings.lang = lg.dataset.lang; saveSettings(); renderChrome(); if (tab === "settings") viewSettings(); return; }
+  if (e.target.id === "attach") return $("#file").click();
+  if (e.target.id === "sendBtn") return send();
+  const el = e.target.closest("[data-act]"); if (!el) return;
+  const a = el.dataset.act, msg = chat[+el.dataset.i];
+  switch (a) {
+    case "cookMsg": return openCook(msg.recipe);
+    case "saveMsg": if (!recipes.some(x => x.id === msg.recipe.id)) { recipes.unshift(msg.recipe); saveRecipes(); } return renderMsgs();
+    case "shopMsg": return addToShop(msg.recipe);
+    case "openLib": detailId = el.dataset.id; return viewLibrary();
+    case "libBack": detailId = null; return viewLibrary();
+    case "cookLib": return openCook(recipes.find(x => x.id === detailId));
+    case "shopLib": return addToShop(recipes.find(x => x.id === detailId));
+    case "adaptLib": pendingContext = recipes.find(x => x.id === detailId); setTab("chat"); $("#input").value = t("adaptHint"); $("#input").focus(); return;
+    case "delLib": if (confirm(t("confirmDel"))) { recipes = recipes.filter(x => x.id !== detailId); saveRecipes(); detailId = null; viewLibrary(); } return;
+    case "sample": recipes.unshift(normRecipe({ ...SAMPLE, id: uid() })); saveRecipes(); return viewLibrary();
+    case "tick": { const x = shop.find(s => s.id === el.dataset.id); x.done = el.checked; saveShop(); return viewShop(); }
+    case "shopDone": shop = shop.filter(x => !x.done); saveShop(); return viewShop();
+    case "shopClear": shop = []; saveShop(); return viewShop();
+    case "shopShare": {
+      const txt = shop.map(x => (x.done ? "✓ " : "• ") + shopText(x)).join("\n");
+      if (navigator.share) { try { await navigator.share({ title: "Shopping list", text: txt }); } catch { } }
+      else { try { await navigator.clipboard.writeText(txt); toast("Copied"); } catch { } }
+      return;
+    }
+    case "export": {
+      const blob = new Blob([JSON.stringify({ recipes, shop, settings: { ...settings, apiKey: "" } }, null, 1)], { type: "application/json" });
+      const u = URL.createObjectURL(blob), l = document.createElement("a"); l.href = u; l.download = "tm6-chef-backup.json"; l.click(); setTimeout(() => URL.revokeObjectURL(u), 3000); return;
+    }
+    case "import": return $("#impFile").click();
+    case "clearChat": chat = []; saveChat(); toast("OK"); return;
+    case "cookClose": return closeCook();
+    case "cookPrev": cook.i = Math.max(-1, cook.i - 1); return renderCook();
+    case "cookNext": if (cook.i >= cook.r.steps.length) return closeCook(); cook.i++; return renderCook();
+    case "cookIng": { const keep = cook.i; cook.i = -1; renderCook(); cook.i = keep; $("#cook .foot").innerHTML = `<button class="btn big" data-act="cookResume">${t("back")}</button>`; return; }
+    case "cookResume": return renderCook();
+    case "timer": return startTimer(+el.dataset.secs, el.dataset.label);
+    case "timerX": timers = timers.filter(x => x.id !== el.dataset.id); return renderTimers();
+  }
+});
+document.addEventListener("input", e => {
+  if (e.target.id === "q") fillList(e.target.value);
+  if (e.target.id === "input") { e.target.style.height = "auto"; e.target.style.height = Math.min(120, e.target.scrollHeight) + "px"; }
+});
+document.addEventListener("change", async e => {
+  const id = e.target.id;
+  if (id === "s_key") { settings.apiKey = e.target.value.trim(); saveSettings(); }
+  if (id === "s_model") { settings.model = e.target.value.trim() || "gemini-2.5-flash"; saveSettings(); }
+  if (id === "s_lang") { settings.lang = e.target.value; saveSettings(); renderChrome(); }
+  if (id === "s_ui") { settings.uiLang = e.target.value; saveSettings(); render(); }
+  if (id === "file") {
+    for (const f of e.target.files) { try { pendingImages.push(await fileToB64(f)); } catch { } }
+    e.target.value = ""; renderThumbs();
+  }
+  if (id === "impFile") {
+    try {
+      const d = JSON.parse(await e.target.files[0].text());
+      if (Array.isArray(d.recipes)) { d.recipes.forEach(r => { r = normRecipe(r); if (!recipes.some(x => x.id === r.id)) recipes.push(r); }); saveRecipes(); }
+      if (Array.isArray(d.shop)) { shop = d.shop; saveShop(); }
+      toast(t("imported"));
+    } catch (err) { toast(t("error") + err.message); }
+  }
+});
+document.addEventListener("keydown", e => {
+  if (e.target.id === "input" && e.key === "Enter" && !e.shiftKey && window.innerWidth > 700) { e.preventDefault(); send(); }
+});
+
+/* ---------- boot ---------- */
+render();
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(() => { });
+</script>
+</body>
+</html>
