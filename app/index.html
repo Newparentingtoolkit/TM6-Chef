@@ -126,7 +126,10 @@ const STR = {
     adaptHint: "Adapt this recipe: ", newRecipe: "Recipe ready", noSteps: "(no steps)",
     keepAwake: "Screen stays on while cooking", difficulty: { easy: "easy", medium: "medium", advanced: "advanced" },
     reverse: "↺ Reverse",
-    saveSettings: "Save settings", settingsSaved: "Saved ✓", keySet: "API key is saved on this phone.", keyMissing: "No API key saved yet."
+    saveSettings: "Save settings", settingsSaved: "Saved ✓", keySet: "API key is saved on this phone.", keyMissing: "No API key saved yet.",
+    importTitle: "Import recipes from photos or PDFs", importPick: "Choose files", importing: "Reading recipe", importDone: "Imported", importDup: "already saved", importFail: "failed",
+    importOne: "All selected files are ONE recipe (several screenshots of the same recipe)",
+    importHint: "Screenshots, photos or PDFs of your own recipes (for example from Cookidoo, for personal use). The original wording and Thermomix settings are kept. By default each file becomes its own recipe. Keep this screen open: about 8 seconds per recipe."
   },
   pl: {
     chat: "Czat", library: "Przepisy", shop: "Zakupy", settings: "Ustawienia",
@@ -149,7 +152,10 @@ const STR = {
     adaptHint: "Zmień ten przepis: ", newRecipe: "Przepis gotowy", noSteps: "(brak kroków)",
     keepAwake: "Ekran nie gaśnie podczas gotowania", difficulty: { easy: "łatwy", medium: "średni", advanced: "zaawansowany" },
     reverse: "↺ Obroty wsteczne",
-    saveSettings: "Zapisz ustawienia", settingsSaved: "Zapisano ✓", keySet: "Klucz API jest zapisany na tym telefonie.", keyMissing: "Brak zapisanego klucza API."
+    saveSettings: "Zapisz ustawienia", settingsSaved: "Zapisano ✓", keySet: "Klucz API jest zapisany na tym telefonie.", keyMissing: "Brak zapisanego klucza API.",
+    importTitle: "Importuj przepisy ze zdjęć lub PDF", importPick: "Wybierz pliki", importing: "Czytam przepis", importDone: "Zaimportowano", importDup: "już zapisane", importFail: "błędy",
+    importOne: "Wszystkie pliki to JEDEN przepis (kilka zrzutów ekranu tego samego przepisu)",
+    importHint: "Zrzuty ekranu, zdjęcia lub PDF własnych przepisów (np. z Cookidoo, do użytku osobistego). Oryginalne sformułowania i ustawienia Thermomix zostają. Domyślnie każdy plik to osobny przepis. Zostaw ten ekran otwarty: ok. 8 sekund na przepis."
   }
 };
 
@@ -286,16 +292,61 @@ async function callGemini() {
     role: m.role,
     parts: [...(m.images || []).map(d => ({ inline_data: { mime_type: "image/jpeg", data: d } })), { text: m.apiText || m.raw || m.text || " " }]
   }));
-  const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.model)}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": settings.apiKey },
-    body: JSON.stringify({ systemInstruction: { parts: [{ text: systemPrompt() }] }, contents, generationConfig: { temperature: 0.6 } })
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error?.message || ("HTTP " + r.status));
-  const text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
-  if (!text) throw new Error(j.promptFeedback?.blockReason || "Empty reply");
-  return text;
+  return geminiRequest(systemPrompt(), contents, 0.6);
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function geminiRequest(sys, contents, temperature) {
+  for (let attempt = 0; ; attempt++) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(settings.model)}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": settings.apiKey },
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: sys }] }, contents, generationConfig: { temperature } })
+    });
+    const j = await r.json().catch(() => ({}));
+    if ((r.status === 429 || r.status === 503) && attempt < 3) { await sleep(20000); continue; } // rate limit / busy: wait and retry
+    if (!r.ok) throw new Error(j.error?.message || ("HTTP " + r.status));
+    const text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || "").join("");
+    if (!text) throw new Error(j.promptFeedback?.blockReason || "Empty reply");
+    return text;
+  }
+}
+const extractPrompt = () => "You turn photos, screenshots or PDFs of ONE recipe into structured data. Copy the recipe faithfully: keep the original title, ingredients with their amounts, the order of the steps and every Thermomix setting (time, temperature, speed, reverse, mode) exactly as shown. Do not invent, improve or add anything. If a part is unreadable, leave it out. Keep the recipe's original language. Several images belong to the same recipe, in reading order. Answer with ONE fenced code block labelled recipe containing only valid JSON in this shape: " + RECIPE_SCHEMA + '. In "tm", time like "5 sec" or "10 min", temp like "100" or "Varoma", speed like "1" or "Turbo"; use null for steps without machine settings. If the files do not contain a recipe, answer exactly: NO_RECIPE';
+function fileToPart(file) {
+  if (file.type === "application/pdf") {
+    return new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => res({ inline_data: { mime_type: "application/pdf", data: String(fr.result).split(",")[1] } });
+      fr.onerror = rej; fr.readAsDataURL(file);
+    });
+  }
+  return fileToB64(file).then(d => ({ inline_data: { mime_type: "image/jpeg", data: d } }));
+}
+async function extractRecipe(files) {
+  const parts = []; for (const f of files) parts.push(await fileToPart(f));
+  parts.push({ text: "Extract the recipe." });
+  const raw = await geminiRequest(extractPrompt(),[{ role: "user", parts }], 0.1);
+  const { recipe } = splitReply(raw);
+  if (!recipe || !recipe.steps.length) throw new Error("No recipe found");
+  return recipe;
+}
+async function importFiles(files, oneRecipe) {
+  if (!settings.apiKey) { toast(t("needKey")); return setTab("settings"); }
+  const log = $("#impLog"), jobs = oneRecipe ? [files] : files.map(f => [f]);
+  let ok = 0, dup = 0; const failed = [];
+  for (let n = 0; n < jobs.length; n++) {
+    if (!$("#impLog")) break; // user left the page
+    log.textContent = `${t("importing")} ${n + 1} / ${jobs.length}…`;
+    try {
+      const r = await extractRecipe(jobs[n]);
+      if (recipes.some(x => x.title.trim().toLowerCase() === r.title.trim().toLowerCase())) dup++;
+      else { recipes.unshift(r); saveRecipes(); ok++; }
+    } catch (e) { failed.push(jobs[n].map(f => f.name).join(", ") + " (" + e.message + ")"); }
+    if (n < jobs.length - 1) await sleep(7000); // free Gemini keys allow roughly 10 requests a minute
+  }
+  const l2 = $("#impLog");
+  if (l2) l2.innerHTML = `<b>${t("importDone")}: ${ok}</b> · ${t("importDup")}: ${dup} · ${t("importFail")}: ${failed.length}` +
+    (failed.length ? `<div class="mute">${failed.map(esc).join("<br>")}</div>` : "");
+  if (tab === "library" && !detailId) fillList($("#q")?.value || "");
 }
 function splitReply(raw) {
   const re = /```(?:recipe|json)\s*([\s\S]*?)```/i, m = raw.match(re);
@@ -336,7 +387,13 @@ function viewLibrary() {
       <button class="btn danger" data-act="delLib">${t("del")}</button></div>`;
     return;
   }
-  $("#view").innerHTML = `<input type="search" id="q" placeholder="${esc(t("search"))}"><div id="list"></div>`;
+  $("#view").innerHTML = `<input type="search" id="q" placeholder="${esc(t("search"))}"><div id="list"></div>
+    <details class="card"><summary><b>${t("importTitle")}</b></summary>
+      <div class="mute" style="margin:8px 0">${t("importHint")}</div>
+      <label style="font-weight:400"><input type="checkbox" id="impOne"> ${t("importOne")}</label>
+      <div class="row"><button class="btn sec" data-act="impPick">${t("importPick")}</button></div>
+      <input type="file" id="impFiles" accept="image/*,application/pdf" multiple class="hidden">
+      <div id="impLog" class="mute"></div></details>`;
   fillList("");
 }
 function fillList(q) {
@@ -516,6 +573,7 @@ document.addEventListener("click", async e => {
       const u = URL.createObjectURL(blob), l = document.createElement("a"); l.href = u; l.download = "tm6-chef-backup.json"; l.click(); setTimeout(() => URL.revokeObjectURL(u), 3000); return;
     }
     case "import": return $("#impFile").click();
+    case "impPick": return $("#impFiles").click();
     case "clearChat": chat = []; saveChat(); toast("OK"); return;
     case "cookClose": return closeCook();
     case "cookPrev": cook.i = Math.max(-1, cook.i - 1); return renderCook();
@@ -541,6 +599,10 @@ document.addEventListener("change", async e => {
   if (id === "file") {
     for (const f of e.target.files) { try { pendingImages.push(await fileToB64(f)); } catch { } }
     e.target.value = ""; renderThumbs();
+  }
+  if (id === "impFiles") {
+    const files = [...e.target.files]; e.target.value = "";
+    if (files.length) importFiles(files, $("#impOne").checked);
   }
   if (id === "impFile") {
     try {
