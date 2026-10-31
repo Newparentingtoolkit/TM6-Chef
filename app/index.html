@@ -47,7 +47,7 @@ h3{font-size:16px;margin:16px 0 6px}
 .icon-btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;width:44px;height:44px;font-size:20px}
 .thumbs{display:flex;gap:6px;flex-wrap:wrap}
 .thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px}
-input[type=text],input[type=password],input[type=search],select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit}
+input[type=text],input[type=password],input[type=search],input[type=number],textarea.ta,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font:inherit}
 label{display:block;font-weight:600;margin:14px 0 4px}
 ul.ing{list-style:none;padding:0;margin:0}
 ul.ing li{padding:6px 0;border-bottom:1px solid var(--line);display:flex;gap:10px}
@@ -62,6 +62,20 @@ ol.steps li{margin:10px 0}
 .shop li{align-items:center}
 .shop li.done span{text-decoration:line-through;color:var(--mute)}
 .hidden{display:none!important}
+/* Editing, portions, notes */
+.field{margin:8px 0}.field label{margin:0 0 3px;font-size:14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid12{display:grid;grid-template-columns:1fr 2fr;gap:8px}
+textarea.ta{resize:vertical}
+.edrow{border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;background:var(--card)}
+.mini{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:10px;padding:6px 12px;font-size:15px;font-weight:600}
+.mini.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.mini[disabled]{opacity:.4}
+.stars button{background:none;border:0;font-size:26px;padding:0 2px;color:var(--mute);line-height:1}
+.stars button.on{color:#e0a100}
+.banner{background:var(--chip);border-radius:12px;padding:10px 12px;margin:0 0 10px}
+.bar2{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.warn{color:var(--warn);font-size:14px;margin:6px 0}
 /* Cook mode */
 #cook{position:fixed;inset:0;background:var(--bg);z-index:10;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 #cook .top{display:flex;align-items:center;gap:10px;padding:10px 16px}
@@ -127,6 +141,19 @@ const STR = {
     adaptHint: "Adapt this recipe: ", newRecipe: "Recipe ready", noSteps: "(no steps)",
     keepAwake: "Screen stays on while cooking", difficulty: { easy: "easy", medium: "medium", advanced: "advanced" },
     reverse: "↺ Reverse",
+    edit: "Edit", cancel: "Cancel", saveEdit: "Save changes", edSaved: "Recipe updated", needTitle: "Give the recipe a title.", confirmDiscard: "Leave without saving your changes?",
+    fTitle: "Title", fDesc: "Description", fServ: "Servings", fPrep: "Prep (min)", fCook: "Cook (min)", fTotal: "Total (min)", fDiff: "Difficulty",
+    fEquip: "Equipment (comma separated)", fGroup: "Group (optional)", fAmount: "Amount", fName: "Ingredient", fStep: "What to do", fMode: "Mode", fTime: "Time (e.g. 5 min)",
+    fTemp: "Temp °C / Varoma", fSpeed: "Speed", fRev: "Reverse", fTimer: "Waiting timer outside the machine (min)", fTips: "Tips, one per line",
+    addIng: "+ Add ingredient", addStep: "+ Add step",
+    adaptOf: "AI version of", replace: "Replace original", copy: "Save as copy", replaced: "Recipe replaced",
+    confirmReplace: "Replace the saved recipe “{t}” with this version? Your notes and rating are kept.",
+    favourite: "Favourite", favOnly: "Favourites only", portions: "Portions", scaleSave: "Save this size",
+    scaleNote: "Ingredient amounts are recalculated. Cooking times, settings and any amounts written inside the step texts stay the same, so check them.",
+    capWarn: "About {n} g/ml of ingredients in total. That may be more than the bowl's MAX line (2.2 L): split it into batches.",
+    notes: "My notes", notesPh: "e.g. less salt next time…", lastCooked: "Last cooked",
+    backupNever: "You have never backed up your recipes.", backupOld: "Your last backup is more than 2 weeks old.",
+    backupHint: "Recipes are stored only on this phone. In the share menu choose Drive or Files to keep a safe copy.", backupNow: "Back up now", later: "Later", backupDone: "Backup saved ✓",
     sources: "Recipe sources (open in browser)", confirmClear: "Clear this conversation? Saved recipes stay.",
     saveSettings: "Save settings", settingsSaved: "Saved ✓", keySet: "API key is saved on this phone.", keyMissing: "No API key saved yet.",
     importTitle: "Import recipes from photos or PDFs", importPick: "Choose files", importing: "Reading recipe", importDone: "Imported", importDup: "already saved", importFail: "failed",
@@ -154,6 +181,19 @@ const STR = {
     adaptHint: "Zmień ten przepis: ", newRecipe: "Przepis gotowy", noSteps: "(brak kroków)",
     keepAwake: "Ekran nie gaśnie podczas gotowania", difficulty: { easy: "łatwy", medium: "średni", advanced: "zaawansowany" },
     reverse: "↺ Obroty wsteczne",
+    edit: "Edytuj", cancel: "Anuluj", saveEdit: "Zapisz zmiany", edSaved: "Przepis zaktualizowany", needTitle: "Podaj tytuł przepisu.", confirmDiscard: "Wyjść bez zapisywania zmian?",
+    fTitle: "Tytuł", fDesc: "Opis", fServ: "Porcje", fPrep: "Przygotowanie (min)", fCook: "Gotowanie (min)", fTotal: "Razem (min)", fDiff: "Trudność",
+    fEquip: "Sprzęt (po przecinku)", fGroup: "Grupa (opcjonalnie)", fAmount: "Ilość", fName: "Składnik", fStep: "Co zrobić", fMode: "Tryb", fTime: "Czas (np. 5 min)",
+    fTemp: "Temp. °C / Varoma", fSpeed: "Prędkość", fRev: "Obroty wsteczne", fTimer: "Czas oczekiwania poza urządzeniem (min)", fTips: "Wskazówki, jedna na linię",
+    addIng: "+ Dodaj składnik", addStep: "+ Dodaj krok",
+    adaptOf: "Wersja AI przepisu", replace: "Zastąp oryginał", copy: "Zapisz jako kopię", replaced: "Przepis zastąpiony",
+    confirmReplace: "Zastąpić zapisany przepis „{t}” tą wersją? Twoje notatki i ocena zostają.",
+    favourite: "Ulubiony", favOnly: "Tylko ulubione", portions: "Porcje", scaleSave: "Zapisz ten rozmiar",
+    scaleNote: "Ilości składników zostały przeliczone. Czasy, ustawienia i ilości wpisane w treści kroków zostają bez zmian, więc sprawdź je.",
+    capWarn: "Razem ok. {n} g/ml składników. To może przekraczać linię MAX miski (2,2 l): podziel na partie.",
+    notes: "Moje notatki", notesPh: "np. mniej soli następnym razem…", lastCooked: "Ostatnio gotowane",
+    backupNever: "Nigdy nie zrobiono kopii zapasowej przepisów.", backupOld: "Ostatnia kopia zapasowa ma ponad 2 tygodnie.",
+    backupHint: "Przepisy są zapisane tylko na tym telefonie. W menu udostępniania wybierz Dysk lub Pliki, aby zachować bezpieczną kopię.", backupNow: "Zrób kopię teraz", later: "Później", backupDone: "Kopia zapisana ✓",
     sources: "Źródła przepisu (otwórz w przeglądarce)", confirmClear: "Wyczyścić rozmowę? Zapisane przepisy zostają.",
     saveSettings: "Zapisz ustawienia", settingsSaved: "Zapisano ✓", keySet: "Klucz API jest zapisany na tym telefonie.", keyMissing: "Brak zapisanego klucza API.",
     importTitle: "Importuj przepisy ze zdjęć lub PDF", importPick: "Wybierz pliki", importing: "Czytam przepis", importDone: "Zaimportowano", importDup: "już zapisane", importFail: "błędy",
@@ -190,7 +230,8 @@ function normRecipe(r) {
     ingredients: Array.isArray(r.ingredients) ? r.ingredients.map(i => typeof i === "string" ? { amount: "", name: i, group: "" } : i) : [],
     steps: steps.map(s => ({ text: s.text || "", tm: s.tm && typeof s.tm === "object" ? s.tm : null, timer_min: s.timer_min || null })),
     tips: Array.isArray(r.tips) ? r.tips : [],
-    sources: Array.isArray(r.sources) ? r.sources.filter(s => s && /^https:\/\//.test(s.url)) : []
+    sources: Array.isArray(r.sources) ? r.sources.filter(s => s && /^https:\/\//.test(s.url)) : [],
+    fav: !!r.fav, rating: Math.max(0, Math.min(5, +r.rating || 0)), notes: r.notes || "", lastCooked: r.lastCooked || "", updated: +r.updated || 0
   };
 }
 function parseSecs(str) {
@@ -265,10 +306,14 @@ function renderMsgs() {
     const txt = m.text ? `<div>${mdLite(m.text)}</div>` : "";
     let card = "";
     if (m.recipe) {
-      const r = m.recipe, savedAlready = recipes.some(x => x.id === r.id);
+      const r = m.recipe, savedAlready = recipes.some(x => x.id === r.id), orig = m.adaptOf && recipes.find(x => x.id === m.adaptOf);
+      const saveBtns = savedAlready ? `<button class="btn sec" disabled>${t("saved")}</button>`
+        : orig ? `<button class="btn sec" data-act="replaceMsg" data-i="${i}">${t("replace")}</button><button class="btn sec" data-act="copyMsg" data-i="${i}">${t("copy")}</button>`
+        : `<button class="btn sec" data-act="saveMsg" data-i="${i}">${t("save")}</button>`;
       card = `<div class="card" style="margin:8px 0 0">${recipeBody(r)}
+        ${orig && !savedAlready ? `<div class="mute">${esc(t("adaptOf"))}: <b>${esc(orig.title)}</b></div>` : ""}
         <div class="row"><button class="btn" data-act="cookMsg" data-i="${i}">${t("cook")}</button>
-        <button class="btn sec" data-act="saveMsg" data-i="${i}" ${savedAlready ? "disabled" : ""}>${savedAlready ? t("saved") : t("save")}</button>
+        ${saveBtns}
         <button class="btn sec" data-act="shopMsg" data-i="${i}">${t("toShop")}</button></div></div>`;
     }
     return `<div class="bubble ${m.role}">${imgs}${txt}${card}${sourceLinks(m.sources)}</div>`;
@@ -384,7 +429,7 @@ async function send() {
   try {
     const { text: raw, sources } = await callGemini(), { text: shown, recipe } = splitReply(raw);
     if (recipe) recipe.sources = sources;
-    chat.push({ role: "model", text: shown, raw, recipe, sources: recipe ? undefined : sources });
+    chat.push({ role: "model", text: shown, raw, recipe, sources: recipe ? undefined : sources, adaptOf: recipe && adaptTarget ? adaptTarget : undefined });
   } catch (e) {
     chat.push({ role: "model", text: t("error") + e.message });
   }
@@ -394,18 +439,33 @@ async function send() {
 /* ---------- library ---------- */
 function viewLibrary() {
   $("#view").style.padding = "";
+  if (editDraft) return viewEdit();
   if (detailId) {
     const r = recipes.find(x => x.id === detailId);
     if (!r) { detailId = null; return viewLibrary(); }
+    const shown = detailScale === 1 ? r : scaleRecipe(r, detailScale), cap = detailScale === 1 ? 0 : weighedTotal(shown);
     $("#view").innerHTML = `<button class="btn sec" data-act="libBack">← ${t("back")}</button>
-      <div class="card">${recipeBody(r)}</div>
+      <div class="card">
+        <div class="bar2"><button class="mini ${r.fav ? "on" : ""}" data-act="fav" aria-label="${esc(t("favourite"))}">${r.fav ? "♥" : "♡"}</button>
+          <span class="stars">${[1, 2, 3, 4, 5].map(n => `<button class="${r.rating >= n ? "on" : ""}" data-act="rate" data-n="${n}" aria-label="${n}">★</button>`).join("")}</span></div>
+        <div class="bar2"><span class="mute">${t("portions")}:</span>
+          ${[[0.5, "½×"], [1, "1×"], [2, "2×"], [3, "3×"]].map(([f, l]) => `<button class="mini ${detailScale === f ? "on" : ""}" data-act="scale" data-f="${f}">${l}</button>`).join("")}</div>
+        ${detailScale !== 1 ? `<div class="mute">${t("scaleNote")}</div>${cap > 2000 ? `<div class="warn">⚠ ${t("capWarn").replace("{n}", Math.round(cap))}</div>` : ""}
+          <div class="row" style="margin:6px 0"><button class="btn sec" data-act="scaleSave">${t("scaleSave")}</button></div>` : ""}
+        ${recipeBody(shown)}
+        <h3>${t("notes")}</h3>
+        <textarea class="ta" id="notes" rows="3" placeholder="${esc(t("notesPh"))}">${esc(r.notes)}</textarea>
+        ${r.lastCooked ? `<div class="mute" style="margin-top:6px">${t("lastCooked")}: ${esc(r.lastCooked)}</div>` : ""}
+      </div>
       <div class="row"><button class="btn" data-act="cookLib">${t("cook")}</button>
       <button class="btn sec" data-act="shopLib">${t("toShop")}</button></div>
-      <div class="row"><button class="btn sec" data-act="adaptLib">${t("adapt")}</button>
+      <div class="row"><button class="btn sec" data-act="editLib">✎ ${t("edit")}</button>
+      <button class="btn sec" data-act="adaptLib">${t("adapt")}</button>
       <button class="btn danger" data-act="delLib">${t("del")}</button></div>`;
     return;
   }
-  $("#view").innerHTML = `<input type="search" id="q" placeholder="${esc(t("search"))}"><div id="list"></div>
+  $("#view").innerHTML = `${backupBanner()}<div class="bar2"><input type="search" id="q" placeholder="${esc(t("search"))}">
+    <button class="mini ${favOnly ? "on" : ""}" id="favFilter" title="${esc(t("favOnly"))}">♥</button></div><div id="list"></div>
     <details class="card"><summary><b>${t("importTitle")}</b></summary>
       <div class="mute" style="margin:8px 0">${t("importHint")}</div>
       <label style="font-weight:400"><input type="checkbox" id="impOne"> ${t("importOne")}</label>
@@ -415,11 +475,12 @@ function viewLibrary() {
   fillList("");
 }
 function fillList(q) {
-  const l = recipes.filter(r => (r.title + " " + r.ingredients.map(i => i.name).join(" ")).toLowerCase().includes(q.toLowerCase()));
+  q = q.toLowerCase();
+  const l = recipes.filter(r => (!favOnly || r.fav) && (r.title + " " + r.ingredients.map(i => i.name).join(" ") + " " + (r.notes || "")).toLowerCase().includes(q));
   $("#list").innerHTML = l.length ? l.map(r => `<div class="card" data-act="openLib" data-id="${r.id}" style="cursor:pointer">
-      <b>${esc(r.title)}</b><div class="mute">${esc(r.description)}</div>
-      <div class="meta"><span class="chip">${r.servings} ${t("servings")}</span>${r.total_min ? `<span class="chip">${r.total_min} ${t("min")}</span>` : ""}</div></div>`).join("")
-    : `<div class="card mute">${t("emptyLib")}</div><button class="btn sec" data-act="sample">${t("sample")}</button>`;
+      <b>${r.fav ? "♥ " : ""}${esc(r.title)}</b><div class="mute">${esc(r.description)}</div>
+      <div class="meta"><span class="chip">${r.servings} ${t("servings")}</span>${r.total_min ? `<span class="chip">${r.total_min} ${t("min")}</span>` : ""}${r.rating ? `<span class="chip">★ ${r.rating}</span>` : ""}</div></div>`).join("")
+    : `<div class="card mute">${t("emptyLib")}</div>${recipes.length ? "" : `<button class="btn sec" data-act="sample">${t("sample")}</button>`}`;
 }
 const SAMPLE = {
   title: "Creamy tomato soup", description: "Quick weeknight soup, all in the bowl.", servings: 4, prep_min: 10, cook_min: 25, total_min: 35, difficulty: "easy",
@@ -495,8 +556,10 @@ function renderCook() {
   const { r, i } = cook, n = r.steps.length, pct = i < 0 ? 0 : Math.min(100, Math.round((i + 1) / n * 100));
   let body = "", nextLabel = t("next"), canBack = i >= 0;
   if (i < 0) {
+    const myNotes = (recipes.find(x => x.id === r.id) || {}).notes;
     body = `<h2>${t("before")}</h2>${r.equipment.length ? `<div class="mute">${esc(r.equipment.join(", "))}</div>` : ""}
-      <ul class="ing">${r.ingredients.map(x => `<li><b>${esc(x.amount)}</b><span>${esc(x.name)}</span></li>`).join("")}</ul>`;
+      <ul class="ing">${r.ingredients.map(x => `<li><b>${esc(x.amount)}</b><span>${esc(x.name)}</span></li>`).join("")}</ul>
+      ${myNotes ? `<h3>${t("notes")}</h3><div class="card" style="white-space:pre-wrap">${esc(myNotes)}</div>` : ""}`;
     nextLabel = t("start");
   } else if (i >= n) {
     body = `<div class="bigtext" style="text-align:center;margin-top:60px">${t("enjoy")}</div>`;
@@ -559,20 +622,54 @@ document.addEventListener("click", async e => {
   const lg = e.target.closest("#langSeg button");
   if (lg) { settings.lang = lg.dataset.lang; saveSettings(); renderChrome(); if (tab === "settings") viewSettings(); return; }
   if (e.target.id === "attach") return $("#file").click();
-  if (e.target.id === "clearBtn") { if (chat.length && confirm(t("confirmClear"))) { chat = []; pendingContext = null; saveChat(); renderMsgs(); } return; }
+  if (e.target.id === "clearBtn") { if (chat.length && confirm(t("confirmClear"))) { chat = []; pendingContext = null; adaptTarget = null; saveChat(); renderMsgs(); } return; }
+  if (e.target.id === "favFilter") { favOnly = !favOnly; e.target.classList.toggle("on", favOnly); fillList($("#q").value); return; }
   if (e.target.id === "sendBtn") return send();
   const el = e.target.closest("[data-act]"); if (!el) return;
   const a = el.dataset.act, msg = chat[+el.dataset.i];
   switch (a) {
     case "cookMsg": return openCook(msg.recipe);
-    case "saveMsg": if (!recipes.some(x => x.id === msg.recipe.id)) { recipes.unshift(msg.recipe); saveRecipes(); } return renderMsgs();
+    case "saveMsg": if (!recipes.some(x => x.id === msg.recipe.id)) { msg.recipe.updated = Date.now(); recipes.unshift(msg.recipe); saveRecipes(); } return renderMsgs();
+    case "copyMsg": if (!recipes.some(x => x.id === msg.recipe.id)) {
+      if (recipes.some(x => x.title === msg.recipe.title)) msg.recipe.title += " (2)"; // keep titles distinguishable in the list
+      msg.recipe.updated = Date.now(); recipes.unshift(msg.recipe); saveRecipes(); saveChat();
+    } adaptTarget = null; return renderMsgs();
+    case "replaceMsg": {
+      const i = recipes.findIndex(x => x.id === msg.adaptOf);
+      if (i < 0 || !confirm(t("confirmReplace").replace("{t}", recipes[i].title))) return;
+      const o = recipes[i];
+      msg.recipe.id = o.id; recipes[i] = { ...msg.recipe, fav: o.fav, rating: o.rating, notes: o.notes, lastCooked: o.lastCooked, updated: Date.now() };
+      saveRecipes(); saveChat(); adaptTarget = null; renderMsgs(); return toast(t("replaced"));
+    }
     case "shopMsg": return addToShop(msg.recipe);
-    case "openLib": detailId = el.dataset.id; return viewLibrary();
-    case "libBack": detailId = null; return viewLibrary();
-    case "cookLib": return openCook(recipes.find(x => x.id === detailId));
-    case "shopLib": return addToShop(recipes.find(x => x.id === detailId));
-    case "adaptLib": pendingContext = recipes.find(x => x.id === detailId); setTab("chat"); $("#input").value = t("adaptHint"); $("#input").focus(); return;
+    case "openLib": detailId = el.dataset.id; detailScale = 1; return viewLibrary();
+    case "libBack": detailId = null; detailScale = 1; return viewLibrary();
+    case "cookLib": { const r = recipes.find(x => x.id === detailId); return openCook(detailScale === 1 ? r : scaleRecipe(r, detailScale)); }
+    case "shopLib": { const r = recipes.find(x => x.id === detailId); return addToShop(detailScale === 1 ? r : scaleRecipe(r, detailScale)); }
+    case "adaptLib": { const r = recipes.find(x => x.id === detailId); pendingContext = detailScale === 1 ? r : scaleRecipe(r, detailScale); adaptTarget = r.id; setTab("chat"); $("#input").value = t("adaptHint"); $("#input").focus(); return; }
     case "delLib": if (confirm(t("confirmDel"))) { recipes = recipes.filter(x => x.id !== detailId); saveRecipes(); detailId = null; viewLibrary(); } return;
+    case "fav": { const r = recipes.find(x => x.id === detailId); r.fav = !r.fav; r.updated = Date.now(); saveRecipes(); return keepScroll(viewLibrary); }
+    case "rate": { const r = recipes.find(x => x.id === detailId), n = +el.dataset.n; r.rating = r.rating === n ? 0 : n; r.updated = Date.now(); saveRecipes(); return keepScroll(viewLibrary); }
+    case "scale": detailScale = +el.dataset.f; return keepScroll(viewLibrary);
+    case "scaleSave": {
+      const i = recipes.findIndex(x => x.id === detailId); recipes[i] = { ...scaleRecipe(recipes[i], detailScale), updated: Date.now() };
+      detailScale = 1; saveRecipes(); keepScroll(viewLibrary); return toast(t("edSaved"));
+    }
+    case "editLib": editId = detailId; editDraft = clone(recipes.find(x => x.id === detailId)); detailScale = 1; $("#view").scrollTop = 0; return viewLibrary();
+    case "edCancel": if (!confirm(t("confirmDiscard"))) return; editDraft = null; editId = null; return viewLibrary();
+    case "edSave": {
+      const o = finalizeDraft(editDraft);
+      if (!o.title) return toast(t("needTitle"));
+      const i = recipes.findIndex(x => x.id === editId); if (i >= 0) recipes[i] = o;
+      saveRecipes(); editDraft = null; editId = null; viewLibrary(); return toast(t("edSaved"));
+    }
+    case "edAdd": return keepScroll(() => { (el.dataset.kind === "ing" ? editDraft.ingredients : editDraft.steps).push(el.dataset.kind === "ing" ? { group: "", amount: "", name: "" } : { text: "", tm: null, timer_min: null }); viewEdit(); });
+    case "edDel": return keepScroll(() => { (el.dataset.kind === "ing" ? editDraft.ingredients : editDraft.steps).splice(+el.dataset.i, 1); viewEdit(); });
+    case "edMove": return keepScroll(() => {
+      const arr = el.dataset.kind === "ing" ? editDraft.ingredients : editDraft.steps, i = +el.dataset.i, j = i + +el.dataset.d;
+      if (j >= 0 && j < arr.length) { [arr[i], arr[j]] = [arr[j], arr[i]]; } viewEdit();
+    });
+    case "bkLater": store.set("backup", { ...store.get("backup", {}), snooze: Date.now() + 3 * 864e5 }); return $("#bk")?.remove();
     case "sample": recipes.unshift(normRecipe({ ...SAMPLE, id: uid() })); saveRecipes(); return viewLibrary();
     case "tick": { const x = shop.find(s => s.id === el.dataset.id); x.done = el.checked; saveShop(); return viewShop(); }
     case "shopDone": shop = shop.filter(x => !x.done); saveShop(); return viewShop();
@@ -587,16 +684,13 @@ document.addEventListener("click", async e => {
       settings.apiKey = $("#s_key").value.trim(); settings.model = $("#s_model").value.trim() || "gemini-2.5-flash";
       saveSettings(); $("#keyState").textContent = settings.apiKey ? t("keySet") : t("keyMissing"); return toast(t("settingsSaved"));
     }
-    case "export": {
-      const blob = new Blob([JSON.stringify({ recipes, shop, settings: { ...settings, apiKey: "" } }, null, 1)], { type: "application/json" });
-      const u = URL.createObjectURL(blob), l = document.createElement("a"); l.href = u; l.download = "tm6-chef-backup.json"; l.click(); setTimeout(() => URL.revokeObjectURL(u), 3000); return;
-    }
+    case "export": return exportBackup();
     case "import": return $("#impFile").click();
     case "impPick": return $("#impFiles").click();
     case "clearChat": chat = []; pendingContext = null; saveChat(); toast("OK"); return;
     case "cookClose": return closeCook();
     case "cookPrev": cook.i = Math.max(-1, cook.i - 1); return renderCook();
-    case "cookNext": if (cook.i >= cook.r.steps.length) return closeCook(); cook.i++; return renderCook();
+    case "cookNext": if (cook.i >= cook.r.steps.length) return closeCook(); cook.i++; if (cook.i === cook.r.steps.length) markCooked(cook.r.id); return renderCook();
     case "cookIng": { const keep = cook.i; cook.i = -1; renderCook(); cook.i = keep; $("#cook .foot").innerHTML = `<button class="btn big" data-act="cookResume">${t("back")}</button>`; return; }
     case "cookResume": return renderCook();
     case "timer": return startTimer(+el.dataset.secs, el.dataset.label);
@@ -605,6 +699,8 @@ document.addEventListener("click", async e => {
 });
 document.addEventListener("input", e => {
   if (e.target.id === "q") fillList(e.target.value);
+  if (e.target.dataset?.f && editDraft) setField(e.target);
+  if (e.target.id === "notes") { const r = recipes.find(x => x.id === detailId); if (r) { r.notes = e.target.value; r.updated = Date.now(); saveRecipes(); } }
   if (e.target.id === "s_key") { settings.apiKey = e.target.value.trim(); saveSettings(); const k = $("#keyState"); if (k) k.textContent = settings.apiKey ? t("keySet") : t("keyMissing"); }
   if (e.target.id === "s_model") { settings.model = e.target.value.trim() || "gemini-2.5-flash"; saveSettings(); }
   if (e.target.id === "input") { e.target.style.height = "auto"; e.target.style.height = Math.min(120, e.target.scrollHeight) + "px"; }
@@ -626,7 +722,13 @@ document.addEventListener("change", async e => {
   if (id === "impFile") {
     try {
       const d = JSON.parse(await e.target.files[0].text());
-      if (Array.isArray(d.recipes)) { d.recipes.forEach(r => { r = normRecipe(r); if (!recipes.some(x => x.id === r.id)) recipes.push(r); }); saveRecipes(); }
+      if (Array.isArray(d.recipes)) {
+        d.recipes.forEach(r => { // new ids are added; same id is replaced only when the backup copy is newer
+          r = normRecipe(r); const i = recipes.findIndex(x => x.id === r.id);
+          if (i < 0) recipes.push(r); else if (r.updated > (recipes[i].updated || 0)) recipes[i] = r;
+        });
+        saveRecipes();
+      }
       if (Array.isArray(d.shop)) { shop = d.shop; saveShop(); }
       toast(t("imported"));
     } catch (err) { toast(t("error") + err.message); }
@@ -635,6 +737,122 @@ document.addEventListener("change", async e => {
 document.addEventListener("keydown", e => {
   if (e.target.id === "input" && e.key === "Enter" && !e.shiftKey && window.innerWidth > 700) { e.preventDefault(); send(); }
 });
+
+/* ---------- editing, portions, backup ---------- */
+let editDraft = null, editId = null, detailScale = 1, favOnly = false, adaptTarget = null;
+function keepScroll(fn) { const v = $("#view"), y = v.scrollTop; fn(); v.scrollTop = y; }
+const clone = o => JSON.parse(JSON.stringify(o));
+const today = () => new Date().toISOString().slice(0, 10);
+
+function fmtQty(n, unit) {
+  const u = unit.trim();
+  if (/^(g|ml)\b/i.test(u)) { if (n >= 50) return String(Math.round(n / 5) * 5); if (n >= 10) return String(Math.round(n)); return String(Math.round(n * 2) / 2); }
+  if (/^(kg|l|dl|cl)\b/i.test(u)) return String(+n.toFixed(2));
+  if (n >= 10) return String(Math.round(n));
+  const q = Math.round(n * 4) / 4, w = Math.floor(q);
+  if (q === 0) return String(+n.toFixed(2));
+  return (w ? String(w) : "") + { 0: "", 0.25: "¼", 0.5: "½", 0.75: "¾" }[q - w];
+}
+function scaleAmount(str, f) {
+  const m = String(str || "").match(/^\s*(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:[.,]\d+)?)(?:\s*[-–]\s*(\d+(?:[.,]\d+)?))?\s*(.*)$/);
+  if (!m) return str;
+  const num = x => { let k; x = x.trim(); if ((k = x.match(/^(\d+)\s+(\d+)\/(\d+)$/))) return +k[1] + k[2] / k[3]; if ((k = x.match(/^(\d+)\/(\d+)$/))) return k[1] / k[2]; return parseFloat(x.replace(",", ".")); };
+  const unit = m[3], a = fmtQty(num(m[1]) * f, unit), b = m[2] ? fmtQty(num(m[2]) * f, unit) : "";
+  return a + (b ? "–" + b : "") + (unit ? " " + unit : "");
+}
+function scaleRecipe(r, f) {
+  const o = clone(r);
+  o.servings = Math.round(r.servings * f * 2) / 2;
+  o.ingredients.forEach(i => { i.amount = scaleAmount(i.amount, f); });
+  return o;
+}
+// Total grams/millilitres of all ingredients: a rough check against the bowl's 2.2 L MAX line.
+function weighedTotal(r) {
+  let sum = 0;
+  r.ingredients.forEach(i => {
+    const m = String(i.amount || "").match(/^\s*(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l)\b/i); if (!m) return;
+    const n = parseFloat(m[1].replace(",", ".")), u = m[2].toLowerCase();
+    sum += u === "kg" || u === "l" ? n * 1000 : n;
+  });
+  return sum;
+}
+
+function setField(el) {
+  const p = el.dataset.f.split("."), v = el.type === "checkbox" ? el.checked : el.value, d = editDraft;
+  if (p[0] === "ing") d.ingredients[+p[1]][p[2]] = v;
+  else if (p[0] === "step") {
+    const s = d.steps[+p[1]];
+    if (p[2] === "tm") { s.tm = s.tm || {}; s.tm[p[3]] = v; }
+    else if (p[2] === "timer_min") s.timer_min = v === "" ? null : +v;
+    else s[p[2]] = v;
+  }
+  else if (p[0] === "equipment") d.equipment = v.split(",").map(x => x.trim()).filter(Boolean);
+  else if (p[0] === "tips") d.tips = v.split("\n").map(x => x.trim()).filter(Boolean);
+  else if (["servings", "prep_min", "cook_min", "total_min"].includes(p[0])) d[p[0]] = +v || 0;
+  else d[p[0]] = v;
+}
+function viewEdit() {
+  const d = editDraft, n1 = d.ingredients.length, n2 = d.steps.length;
+  const inp = (label, path, val, type = "text") => `<div class="field"><label>${label}</label><input type="${type}" ${type === "number" ? 'inputmode="decimal" min="0"' : ""} data-f="${path}" value="${esc(val)}"></div>`;
+  const btns = (kind, i, n) => `<div class="row" style="margin:6px 0 0"><button class="mini" data-act="edMove" data-kind="${kind}" data-i="${i}" data-d="-1" ${i === 0 ? "disabled" : ""}>↑</button>
+    <button class="mini" data-act="edMove" data-kind="${kind}" data-i="${i}" data-d="1" ${i === n - 1 ? "disabled" : ""}>↓</button>
+    <button class="mini" data-act="edDel" data-kind="${kind}" data-i="${i}">✕</button></div>`;
+  $("#view").innerHTML = `<button class="btn sec" data-act="edCancel">← ${t("cancel")}</button><h2>${t("edit")}</h2>
+    ${inp(t("fTitle"), "title", d.title)}
+    <div class="field"><label>${t("fDesc")}</label><textarea class="ta" rows="2" data-f="description">${esc(d.description)}</textarea></div>
+    <div class="grid2">${inp(t("fServ"), "servings", d.servings || "", "number")}${inp(t("fPrep"), "prep_min", d.prep_min || "", "number")}
+    ${inp(t("fCook"), "cook_min", d.cook_min || "", "number")}${inp(t("fTotal"), "total_min", d.total_min || "", "number")}</div>
+    <div class="field"><label>${t("fDiff")}</label><select data-f="difficulty">${["", "easy", "medium", "advanced"].map(k => `<option value="${k}" ${d.difficulty === k ? "selected" : ""}>${k ? t("difficulty")[k] : "–"}</option>`).join("")}</select></div>
+    ${inp(t("fEquip"), "equipment", d.equipment.join(", "))}
+    <h3>${t("ingredients")}</h3>
+    ${d.ingredients.map((x, i) => `<div class="edrow">
+      <div class="grid12">${inp(t("fAmount"), `ing.${i}.amount`, x.amount || "")}${inp(t("fName"), `ing.${i}.name`, x.name || "")}</div>
+      <div style="display:flex;gap:6px;align-items:center;margin-top:6px"><input type="text" data-f="ing.${i}.group" value="${esc(x.group || "")}" placeholder="${esc(t("fGroup"))}" style="flex:1;min-width:0;padding:7px 10px">
+      ${["-1", "1"].map(dd => `<button class="mini" data-act="edMove" data-kind="ing" data-i="${i}" data-d="${dd}" ${(dd === "-1" && i === 0) || (dd === "1" && i === n1 - 1) ? "disabled" : ""}>${dd === "-1" ? "↑" : "↓"}</button>`).join("")}
+      <button class="mini" data-act="edDel" data-kind="ing" data-i="${i}">✕</button></div></div>`).join("")}
+    <button class="btn sec" data-act="edAdd" data-kind="ing">${t("addIng")}</button>
+    <h3>${t("steps")}</h3>
+    ${d.steps.map((s, i) => { const tm = s.tm || {}; return `<div class="edrow"><b>${t("step")} ${i + 1}</b>
+      <div class="field"><label>${t("fStep")}</label><textarea class="ta" rows="3" data-f="step.${i}.text">${esc(s.text)}</textarea></div>
+      <div class="grid2">${inp(t("fMode"), `step.${i}.tm.mode`, tm.mode || "")}${inp(t("fTime"), `step.${i}.tm.time`, tm.time || "")}
+      ${inp(t("fTemp"), `step.${i}.tm.temp`, tm.temp || "")}${inp(t("fSpeed"), `step.${i}.tm.speed`, tm.speed || "")}</div>
+      <label style="font-weight:400"><input type="checkbox" data-f="step.${i}.tm.reverse" ${tm.reverse ? "checked" : ""}> ${t("fRev")}</label>
+      ${inp(t("fTimer"), `step.${i}.timer_min`, s.timer_min || "", "number")}${btns("step", i, n2)}</div>`; }).join("")}
+    <button class="btn sec" data-act="edAdd" data-kind="step">${t("addStep")}</button>
+    <h3>${t("tips")}</h3><textarea class="ta" rows="3" data-f="tips" placeholder="${esc(t("fTips"))}">${esc(d.tips.join("\n"))}</textarea>
+    <div class="row" style="margin-top:16px"><button class="btn" data-act="edSave">${t("saveEdit")}</button><button class="btn sec" data-act="edCancel">${t("cancel")}</button></div>`;
+}
+function finalizeDraft(d) {
+  const o = clone(d);
+  o.title = (o.title || "").trim();
+  o.ingredients = o.ingredients.filter(i => (i.name || "").trim() || (i.amount || "").trim())
+    .map(i => ({ group: (i.group || "").trim(), amount: (i.amount || "").trim(), name: (i.name || "").trim() }));
+  o.steps = o.steps.map(s => {
+    let tm = s.tm ? { mode: (s.tm.mode || "").trim(), time: (s.tm.time || "").trim(), temp: String(s.tm.temp || "").trim(), speed: String(s.tm.speed || "").trim(), reverse: !!s.tm.reverse } : null;
+    if (tm && !(tm.mode || tm.time || tm.temp || tm.speed || tm.reverse)) tm = null;
+    return { text: (s.text || "").trim(), tm, timer_min: s.timer_min > 0 ? +s.timer_min : null };
+  }).filter(s => s.text || s.tm);
+  o.updated = Date.now();
+  return o;
+}
+function markCooked(id) { const s = recipes.find(x => x.id === id); if (s) { s.lastCooked = today(); saveRecipes(); } }
+
+function markBackup() { store.set("backup", { last: Date.now(), snooze: 0 }); toast(t("backupDone")); $("#bk")?.remove(); }
+async function exportBackup() {
+  const json = JSON.stringify({ recipes, shop, settings: { ...settings, apiKey: "" } }, null, 1);
+  const name = "tm6-chef-backup-" + today() + ".json", file = new File([json], name, { type: "application/json" });
+  try {
+    if (navigator.canShare?.({ files: [file] })) { await navigator.share({ files: [file], title: name }); return markBackup(); } // share sheet: pick Drive / Files
+  } catch (e) { if (e.name === "AbortError") return; }
+  const u = URL.createObjectURL(file), l = document.createElement("a"); l.href = u; l.download = name; l.click(); setTimeout(() => URL.revokeObjectURL(u), 3000);
+  markBackup();
+}
+function backupBanner() {
+  const b = store.get("backup", {}), now = Date.now();
+  if (!recipes.length || (b.last && now - b.last < 14 * 864e5) || now < (b.snooze || 0)) return "";
+  return `<div class="banner" id="bk"><b>${b.last ? t("backupOld") : t("backupNever")}</b><div class="mute">${t("backupHint")}</div>
+    <div class="row" style="margin:8px 0 0"><button class="btn" data-act="export">${t("backupNow")}</button><button class="btn sec" data-act="bkLater">${t("later")}</button></div></div>`;
+}
 
 /* ---------- boot ---------- */
 render();
